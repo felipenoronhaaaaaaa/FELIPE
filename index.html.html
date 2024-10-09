@@ -1,0 +1,407 @@
+<!DOCTYPE html><html><head><base href="https://websim.app/content/"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Dashboard Método iGaming</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&amp;display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #000000;
+    color: #ffffff;
+    margin: 0;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+  .dashboard {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .card {
+    background-color: #111111;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+  }
+  h1 {
+    color: #ffffff;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 1.8em;
+    margin-bottom: 20px;
+  }
+  h2 {
+    color: #ffffff;
+    font-size: 1.2em;
+    margin-bottom: 15px;
+  }
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 20px;
+  }
+  th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #333333;
+  }
+  th {
+    background-color: #222222;
+    color: #ffffff;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  tr:hover {
+    background-color: #1a1a1a;
+  }
+  .chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+  }
+  .kpi {
+    font-size: 28px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 5px;
+  }
+  .kpi-label {
+    font-size: 14px;
+    text-align: center;
+    color: #a0a0a0;
+    text-transform: uppercase;
+  }
+  .subtle-glow {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  }
+  #kpiContainer {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
+    border-radius: 10px;
+    padding: 15px;
+    width: 30%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+</style>
+</head>
+<body>
+<h1 class="subtle-glow">Dashboard: Método iGaming I Desafio turma $3K/DOL I Set-Out 24</h1>
+
+<div id="kpiContainer">
+  <div class="kpi-card">
+    <div class="kpi" id="totalFTDs" style="color: #4cc9f0;">0</div>
+    <div class="kpi-label">Total de FTDs</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi" id="totalRevenue" style="color: #f72585;">R$ 0</div>
+    <div class="kpi-label">Receita Total</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi" id="averageLeadConversion" style="color: #4361ee;">0%</div>
+    <div class="kpi-label">Taxa Média de Conversão</div>
+  </div>
+</div>
+
+<div class="dashboard">
+  <div class="card">
+    <h2>FTDs por Casa de Apostas</h2>
+    <div class="chart-container">
+      <canvas id="ftdsByBookmaker"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Conversão de Leads para FTDs</h2>
+    <div class="chart-container">
+      <canvas id="leadConversion"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Distribuição de Receita</h2>
+    <div class="chart-container">
+      <canvas id="revenueDistribution"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Tabela de Desempenho dos Afiliados</h2>
+  <div style="overflow-x: auto;">
+    <table id="affiliateTable">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Estratégia Utilizada</th>
+          <th>FTDs</th>
+          <th>Receita do FTD (R$)</th>
+          <th>Casa Utilizada</th>
+          <th>Receita (Rev)</th>
+          <th>Volume de Leads</th>
+          <th>RevShare</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Dados serão preenchidos aqui -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const maleNames = ["Felipe Oliveira", "João Silva", "Carlos Souza", "Pedro Santos", "Lucas Ferreira", "Gabriel Costa", "Matheus Rodrigues", "Thiago Almeida", "Rafael Carvalho", "Gustavo Pereira", "Bruno Martins", "Daniel Oliveira", "Eduardo Lima", "Fernando Gomes", "Henrique Castro"];
+const femaleNames = ["Ana Costa", "Mariana Almeida", "Luiza Ferreira", "Beatriz Oliveira", "Juliana Santos", "Fernanda Silva", "Carolina Souza", "Gabriela Rodrigues", "Isabela Martins", "Larissa Pereira", "Camila Fernandes", "Letícia Barbosa", "Patrícia Moreira", "Renata Campos", "Vanessa Nunes"];
+const bookmakers = ["ONABET", "PLAYPIX", "APOSTA GANHA", "PIXBET", "BET7K", "VAI DE BET", "BETNACIONAL"];
+
+function generateUniqueNames(count) {
+  const names = [];
+  const allNames = [...maleNames, ...femaleNames];
+  
+  while (names.length < count) {
+    const randomIndex = Math.floor(Math.random() * allNames.length);
+    const name = allNames[randomIndex];
+    
+    if (!names.includes(name)) {
+      names.push(name);
+    }
+  }
+  
+  return names;
+}
+
+function generateRandomFTD() {
+  return Math.floor(Math.random() * (390 - 180 + 1) + 180);
+}
+
+function generateAffiliateData(count) {
+  const names = generateUniqueNames(count);
+  const data = [];
+  for (let i = 0; i < count; i++) {
+    const ftd = generateRandomFTD();
+    data.push({
+      name: names[i],
+      strategy: "SALA SINAIS IA + ESTRATÉGIA IA 2",
+      ftd: ftd,
+      ftdRevenue: ftd * 40,
+      bookmaker: bookmakers[Math.floor(Math.random() * bookmakers.length)],
+      revenueStatus: "Processamento",
+      leadVolume: Math.floor(ftd * 1.7),
+      revShare: "Processando"
+    });
+  }
+  return data;
+}
+
+const affiliateData = generateAffiliateData(20);
+
+function populateTable() {
+  const tableBody = document.querySelector("#affiliateTable tbody");
+  affiliateData.forEach(affiliate => {
+    const row = tableBody.insertRow();
+    Object.values(affiliate).forEach(value => {
+      const cell = row.insertCell();
+      cell.textContent = value;
+    });
+  });
+}
+
+function updateKPIs() {
+  const totalFTDs = affiliateData.reduce((sum, affiliate) => sum + affiliate.ftd, 0);
+  const totalRevenue = affiliateData.reduce((sum, affiliate) => sum + affiliate.ftdRevenue, 0);
+  const totalLeads = affiliateData.reduce((sum, affiliate) => sum + affiliate.leadVolume, 0);
+  const averageLeadConversion = (totalFTDs / totalLeads) * 100;
+
+  gsap.to("#totalFTDs", {
+    innerHTML: totalFTDs.toLocaleString('pt-BR'),
+    duration: 2,
+    ease: "power2.out"
+  });
+  gsap.to("#totalRevenue", {
+    innerHTML: `R$ ${totalRevenue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+    duration: 2,
+    ease: "power2.out"
+  });
+  gsap.to("#averageLeadConversion", {
+    innerHTML: `${averageLeadConversion.toFixed(2)}%`,
+    duration: 2,
+    ease: "power2.out"
+  });
+}
+
+function createFTDsByBookmakerChart() {
+  const bookmakerData = {};
+  affiliateData.forEach(affiliate => {
+    if (bookmakerData[affiliate.bookmaker]) {
+      bookmakerData[affiliate.bookmaker] += affiliate.ftd;
+    } else {
+      bookmakerData[affiliate.bookmaker] = affiliate.ftd;
+    }
+  });
+
+  new Chart(document.getElementById("ftdsByBookmaker"), {
+    type: 'pie',
+    data: {
+      labels: Object.keys(bookmakerData),
+      datasets: [{
+        data: Object.values(bookmakerData),
+        backgroundColor: ['#ff6b6b', '#4ecdc4', '#45b7d8', '#f9c74f', '#f8961e', '#90be6d', '#577590']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            color: '#ffffff'
+          }
+        },
+        title: {
+          display: false
+        },
+        datalabels: {
+          color: '#ffffff',
+          formatter: (value, ctx) => {
+            let sum = 0;
+            let dataArr = ctx.chart.data.datasets[0].data;
+            dataArr.map(data => {
+              sum += data;
+            });
+            let percentage = (value * 100 / sum).toFixed(2) + "%";
+            return percentage;
+          },
+        }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+}
+
+function createLeadConversionChart() {
+  const labels = affiliateData.map(affiliate => affiliate.name);
+  const leadData = affiliateData.map(affiliate => affiliate.leadVolume);
+  const ftdData = affiliateData.map(affiliate => affiliate.ftd);
+
+  new Chart(document.getElementById("leadConversion"), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Leads',
+          data: leadData,
+          backgroundColor: 'rgba(76, 201, 240, 0.7)',
+          borderColor: 'rgba(76, 201, 240, 1)',
+          borderWidth: 1
+        },
+        {
+          label: 'FTDs',
+          data: ftdData,
+          backgroundColor: 'rgba(67, 170, 139, 0.7)',
+          borderColor: 'rgba(67, 170, 139, 1)',
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: {
+          stacked: true,
+          ticks: {
+            color: '#ffffff'
+          }
+        },
+        y: {
+          stacked: true,
+          ticks: {
+            color: '#ffffff'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: '#ffffff'
+          }
+        },
+        title: {
+          display: false
+        }
+      }
+    }
+  });
+}
+
+function createRevenueDistributionChart() {
+  const revenueData = affiliateData.map(affiliate => affiliate.ftdRevenue);
+  const labels = affiliateData.map(affiliate => affiliate.name);
+
+  new Chart(document.getElementById("revenueDistribution"), {
+    type: 'polarArea',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: revenueData,
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.8)',
+          'rgba(54, 162, 235, 0.8)',
+          'rgba(255, 206, 86, 0.8)',
+          'rgba(75, 192, 192, 0.8)',
+          'rgba(153, 102, 255, 0.8)',
+          'rgba(255, 159, 64, 0.8)',
+          'rgba(199, 199, 199, 0.8)',
+          'rgba(83, 102, 255, 0.8)',
+          'rgba(40, 159, 64, 0.8)',
+          'rgba(210, 199, 199, 0.8)',
+          'rgba(78, 52, 199, 0.8)',
+          'rgba(209, 99, 132, 0.8)',
+          'rgba(54, 150, 235, 0.8)',
+          'rgba(255, 190, 86, 0.8)',
+          'rgba(75, 192, 170, 0.8)',
+          'rgba(153, 102, 220, 0.8)',
+          'rgba(255, 159, 100, 0.8)',
+          'rgba(199, 199, 150, 0.8)',
+          'rgba(83, 102, 200, 0.8)',
+          'rgba(40, 159, 120, 0.8)'
+        ]
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: false
+        },
+        title: {
+          display: false
+        }
+      },
+      scale: {
+        ticks: {
+          beginAtZero: true
+        },
+        reverse: false
+      },
+      animation: {
+        animateRotate: true,
+        animateScale: true
+      }
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  populateTable();
+  updateKPIs();
+  createFTDsByBookmakerChart();
+  createLeadConversionChart();
+  createRevenueDistributionChart();
+});
+</script>
+
+</body></html>
